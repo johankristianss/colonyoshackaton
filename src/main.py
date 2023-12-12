@@ -1,5 +1,4 @@
 import os
-import socket
 import numpy as np
 from tqdm import tqdm
 import cv2 as cv
@@ -12,10 +11,6 @@ from keras.callbacks import Callback
 from keras.optimizers import Adam
 from keras.layers import Input, Conv2D, Conv2DTranspose, MaxPooling2D, concatenate, Dropout
 
-# Print the hostname
-hostname = socket.gethostname()
-print("hostname:", hostname)
-
 # The projdir is the location on the executor where project dirs have been synced
 projdir = str(os.environ.get("PROJECT_DIR"))
 
@@ -25,11 +20,17 @@ processid = os.environ.get("COLONIES_PROCESS_ID")
 print("projdir:", projdir)
 print("processid:", processid)
 
+
+####################################################
+# Data preparation
+####################################################
+
 image_path = '/cfs/water/Images/'
 mask_path = '/cfs/water/Masks/'
+
 SIZE = 128
 
-# lists of images and masks names
+# Lists of images and masks names
 image_names = sorted(next(os.walk(image_path))[-1])
 mask_names = sorted(next(os.walk(mask_path))[-1])
 
@@ -51,7 +52,11 @@ for id in tqdm(range(len(mask_names)), desc="Mask"):
 # Train test split
 images_train, images_test, mask_train, mask_test = train_test_split(images, masks, test_size=0.25)
 
+
+####################################################
 # Define U-net architecture
+####################################################
+
 def unet_model(input_layer, start_neurons):
     # Contraction path
     conv1 = Conv2D(start_neurons, kernel_size=(3, 3), activation="relu", padding="same")(input_layer)
@@ -116,10 +121,14 @@ model = Model(input_layer, output_layer)
 model.compile(loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"])
 model.summary()
 
+
+####################################################
+# Training
+#####################################################
+
 def mask_threshold(image, threshold=0.25):
   return image>threshold
 
-# Training
 epochs = 1 
 batch_size = 32
 
@@ -127,7 +136,6 @@ history = model.fit(images_train, mask_train,
                     validation_data=[images_test, mask_test], 
                     epochs=epochs,
                     batch_size=batch_size)
-
 
 plt.figure(figsize=(10,5))
 
@@ -153,7 +161,11 @@ plt.tight_layout()
 
 plt.savefig(projdir + '/result/res_' + processid + '.png')
 
+
+####################################################
 # Make predictions
+#####################################################
+
 predictions = model.predict(images_test)
 
 def plot_results(threshold=0.5):
