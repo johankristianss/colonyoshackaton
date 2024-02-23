@@ -25,8 +25,8 @@ print("processid:", processid)
 # Data preparation
 ####################################################
 
-image_path = '/cfs/water/Images/'
-mask_path = '/cfs/water/Masks/'
+image_path = projdir + '/data/water/Images/'
+mask_path = projdir + '/data/water/Masks/'
 
 SIZE = 128
 
